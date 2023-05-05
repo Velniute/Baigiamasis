@@ -1,88 +1,37 @@
 import pandas as pd
-import re
-import numpy as np
+
 
 df = pd.read_excel("Autobilis skelbimai_GALUTINIS.xlsx")
-
-#panaikinu \n
-df = df.replace('\n', '', regex=True) #nuskaitant faila isirase \n simboliai, istrinu juos
-
-#Is object stulpeliu eilutese isvalau tarpus pries ir po
-# df.info()
-for column in df.columns:
-    if df[column].dtype == object:
-        df[column] = df[column].str.strip()
-
-#sutvarkau Metai stulpeli, kad rezultate liktu tik metai int formatu
-df['Tik_metai'] = df['Metai'].apply(lambda x: x.split('-')[0]) #susikuriu nauja stulpeli ir i ji irasau skaicius be -5
-# ir pan.
-df = df.drop('Metai', axis=1) #istrinu originalu stulpeli
-df = df.rename(columns={'Tik_metai': 'Metai'}) #pakeiciu pavadinimas
-df['Metai'] = df['Metai'].str.strip() #panaikinu tarpus pries ir po skaiciaus, nes meta klaida
-df['Metai'] = pd.to_datetime(df['Metai'], format='%Y') #pakeiciu formata i datetime, bet gaunu datestamp
-df['Metai'] = df['Metai'].dt.year #pasilieku 4 skaicius ir gaunu int tipa
+df.info()
 
 
-#Sutvarkau Kaina stulpeli, kad reiksmes butu int tipo ir be valiutos zenklo
-df['Kaina'] = df['Kaina'].apply(lambda x: int(re.sub('[^0-9]', '', x))) #istrinu valiutos zenkla,gaunu int tipa
+for col in df.columns:
+    if df[col].dtype == 'object': #tikrinu, ar stulpelis yra tekstinis
+        df[col] = df[col].str.replace('\xa0', '') #išvalau \xa0 simbolius
+        df[col] = df[col].str.replace('km', '') #išvalau km simbolius
+        df[col] = df[col].str.replace(' kW', '') #išvalau kW simbolius
+        df[col] = df[col].str.replace('€', '') #išvalau euro simbolius
+        df[col] = df[col].str.replace('2+2', '')  #išvalau 2+2 simbolius Marke stulpelyje
+        df[col] = df[col].str.replace(' ', '')  #išvalau tarpus tarp skaitmenu Kainu stulpelyje
+        df[col] = df[col].str.strip()  #stulpeliuose pašalinu tarpus priekyje ir gale
 
 
-#Sutvarkau Rida stulpeli, kad neliktu \xa0 simboliu skaiciaus viduryje ir, kad neliktu km
-df['Rida'] = df['Rida'].str.replace('\xa0', '') #istrinu \xa0 simbolius, kurie isirase nuskaitant faila
-df['Rida'] = df['Rida'].str.replace('km', '') #istrinu km
-
-df['Rida_copy'] = df['Rida'].copy() #sukuriu stulpelio kopija reiksmiu patikrinimui
-df['Rida'] = pd.to_numeric(df['Rida'], errors='coerce') #keiciu reiksmes i skaicius, bet jei reiksme yra string,
-# tada gaunasi nan
-df['Rida'] = df['Rida'].fillna(value=0) # pakeiciu NaN reiksmes i 0
-df['Rida'] = df['Rida'].astype(int) # keiciu reiksmiu tipa i int
-
-# for index, row in df.iterrows():
-#     try:
-#         df.loc[index, 'Rida'] = int(row['Rida'])
-#     except ValueError:
-#         df.loc[index, 'Rida'] = np.nan   #iteruoju per stulpelio eilutes ir jei reiksme yra ne int, tai irasoma nan,
-#bet lieka object tipas
+# pašalinu nereikalingus simbolius iš Metai stulpelio reikšmių ir išlaikau tik pirmus 4 simbolius
+df['Metai'] = df['Metai'].str.replace('-\s\d+', '', regex=True).str.slice(stop=4)
 
 
-#Sutvarkau Variklio_galia stulpeli ir pagal ji istrinu eilutes, kuriose reiksmes scrapinant sukrito ne i teisingus
-# stulpelius
-df['Variklio_galia'] = df['Variklio_galia'].str.replace('kW', '') #pasalinu kW
-df['Variklio_galia_copy'] = df['Variklio_galia'].copy() #susikuriu stulpelio kopija patikrinimui
+# iteruoju per stulpelius ir keičiu reikšmes
+for col in ['Rida', 'Variklio_galia']:
+    df[col] = df[col].apply(lambda x: int(x) if str(x).isdigit() else 0)
 
-df['Variklio_galia'] = pd.to_numeric(df['Variklio_galia'], errors='coerce') #keiciu reiksmes i skaicius, bet jei
-# reiksme yra string, tada gaunasi nan
-df['Variklio_galia'] = df['Variklio_galia'].fillna(value=0) # pakeiciu NaN reiksmes i 0
-df['Variklio_galia'] = df['Variklio_galia'].astype(int) # keiciu reiksmiu tipa i int
+#keiciu tipa, bet vis tiek gaunasi timestamp, neina padaryti 4 skaitmenu/metu
+df['Metai'] = pd.to_datetime(df['Metai'].str[:4], format='%Y')
 
-df.dropna(subset=['Variklio_galia'], inplace=True) #istrinu visas nan eilutes
+df['Kaina'] = df['Kaina'].astype(int)
 
-
-#Sutvarkau Marke stulpeli, pasalinu 2+2 simbolius, kurie atsirado scrapinant
-df['Marke'] = df['Marke'].str.replace('2+2', '')
-
-
-#Sutvarkau Kebulo_tipas stulpeli:
-df['Kebulo_tipas'] = df['Kebulo_tipas'].str.replace('kW', '')
-
-
-#Reikia isrinkti visas eilutes, kuriose reiksmes sukritusios i netinkamus stulpelius.Variklio_galia kai yra 0,
-# atrodo tada yra klaidos
-
-df[df['Variklio_galia'] == 0]
+# pakeiciu stulpeliu pavadinimas
+df = df.rename(columns={'Variklio_galia': 'Variklio_galia_kW', 'Rida': 'Rida_km', 'Kaina': 'Kaina_Eur.'})
 
 df.info()
-print(df['Variklio_galia'].dtype)
 
 
-
-
-# unique = df['Marke'].unique()
-# unique1 = df['Kebulo_tipas'].unique()
-
-
-
-# df['Marke'] = df['Marke'].str.strip()  # pašalina tarpo simbolius pradžioje ir pabaigoje
-# df['Marke'] = df['Marke'].astype(str)  # paverčia reikšmes į eilutes tipo
-# df['Marke'] = df['Marke'].apply(lambda x: x.replace('simbolis', ''))  # panaikina nereikalingus simbolius
-# unique_values = df['Marke'].unique()
