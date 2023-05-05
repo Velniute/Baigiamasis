@@ -37,21 +37,21 @@ df.info()
 
 #Ieskoti skaitiniu reiksmiu stulpeliuose iteruojant per eilutes ir susidedant tokias reiksmes i lista
 
+#2 etapas df isvalymas nuo netinkamu reiksmiu
+
+df_clean = df.copy()
+
 klaidos = []
-isviso_klaidos = 0
-
 for col in ['Kebulo_tipas', 'Kuro_tipas', 'Pavaru_dezes_tipas']:
-    for val in df[col]:
-        if str(val).isnumeric():
-            klaidos.append(val)
-            isviso_klaidos += 1
+    skaicius = df_clean[col].str.isnumeric()
+    klaidos_col = df_clean[skaicius][col].tolist()
+    klaidos += klaidos_col
+    print(f"{len(klaidos_col)} netinkamos reikšmės stulpelyje {col}")
 
-print("Is viso eiluciu su klaidingomis reiksmemis:", isviso_klaidos)
+#išmetame klaidingas eilutes
+df_clean = df_clean[~df_clean.isin(klaidos)].dropna()
+print(f"Po išmetimo, DataFrame yra dydžio {df_clean.shape}")
 
-# gauti indeksus klaidingų eilučių
-klaidos_indeksai = df.index[df['Kebulo_tipas'].isin(klaidos) | df['Kuro_tipas'].isin(klaidos) |
-                            df['Pavaru_dezes_tipas'].isin(klaidos)]
+df_clean = df_clean.reset_index(drop=True)
+df_clean.to_csv('df_clean.csv', index=False)
 
-# ištrinti eilutes su nurodytais indeksais
-isvalytas_df = df.drop(klaidos_indeksai)
-isvalytas_df
