@@ -4,8 +4,6 @@ import pandas as pd
 df = pd.read_excel("Autobilis skelbimai_GALUTINIS.xlsx")
 df.info()
 
-#1 etapas. Reiksmiu sutvarkymas
-
 for col in df.columns:
     if df[col].dtype == 'object':
         df[col] = df[col].str.replace('\xa0', '')
@@ -34,7 +32,6 @@ df = df.rename(columns={'Variklio_galia': 'Variklio_galia_kW', 'Rida': 'Rida_km'
 
 df.info()
 
-#2 etapas df isvalymas nuo netinkamu reiksmiu
 
 df_clean = df.copy()
 
@@ -45,7 +42,7 @@ for col in ['Kebulo_tipas', 'Kuro_tipas', 'Pavaru_dezes_tipas']:
     klaidos += klaidos_col
     print(f"{len(klaidos_col)} netinkamos reikšmės stulpelyje {col}")
 
-#išmetame klaidingas eilutes
+
 df_clean = df_clean[~df_clean.isin(klaidos)].dropna()
 print(f"Po išmetimo, DataFrame yra dydžio {df_clean.shape}")
 
