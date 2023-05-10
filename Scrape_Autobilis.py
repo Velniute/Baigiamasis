@@ -30,4 +30,4 @@ for page_num in range(1, 162):
             pass
 
 
-excel.save('Autobilis skelbimai_GALUTINIS.xlsx')
+excel.save('Autobilis_skelbimai.xlsx')

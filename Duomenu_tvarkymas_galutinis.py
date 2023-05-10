@@ -2,7 +2,7 @@ import pandas as pd
 
 
 df = pd.read_excel("Autobilis skelbimai_GALUTINIS.xlsx")
-df.info()
+#df.info()
 
 for col in df.columns:
     if df[col].dtype == 'object':
@@ -14,24 +14,13 @@ for col in df.columns:
         df[col] = df[col].str.replace(' ', '')
         df[col] = df[col].str.strip()
 
-
 df['Metai'] = df['Metai'].str.replace('-\s\d+', '', regex=True).str.slice(stop=4)
-
+df['Metai'] = df['Metai'].astype(pd.Int64Dtype())
 
 for col in ['Rida', 'Variklio_galia']:
     df[col] = df[col].apply(lambda x: int(x) if str(x).isdigit() else 0)
 
-
-df['Metai'] = pd.to_datetime(df['Metai'].str[:4], format='%Y')
-
-
 df['Kaina'] = df['Kaina'].astype(int)
-
-
-df = df.rename(columns={'Variklio_galia': 'Variklio_galia_kW', 'Rida': 'Rida_km', 'Kaina': 'Kaina_Eur.'})
-
-df.info()
-
 
 df_clean = df.copy()
 
@@ -47,4 +36,20 @@ df_clean = df_clean[~df_clean.isin(klaidos)].dropna()
 print(f"Po išmetimo, DataFrame yra dydžio {df_clean.shape}")
 
 df_clean = df_clean.reset_index(drop=True)
-df_clean.to_csv('df_clean.csv', index=False)
+#df_clean.to_csv('df_clean.csv', index=False)
+
+print(df_clean.describe())
+
+#koks procentas NaN reiksmiu df
+print(df_clean.isnull().sum() * 100/len(df))
+
+#kokios unikalios stulpeliu reiksmes
+print(df_clean['Kuro_tipas'].unique())
+# print(df[['Kebulo_tipas', 'Kuro_tipas', 'Pavaru_dezes_tipas']].unique())
+
+#kiek yra 0 reiksmiu stulpeliuse
+print(df[df['Kuro_tipas'] == 'Kita'])
+
+#
+# #pasiplotinam, kad apziureti duomenis grafiskai
+# df['Metai'].plot(kind='hist', bins=60)
