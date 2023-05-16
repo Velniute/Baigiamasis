@@ -3,14 +3,18 @@ from bs4 import BeautifulSoup
 import requests
 from sklearn.model_selection import train_test_split
 
+#Sukuriau data lista, i kuri talpinsiu reiksmes
 data = []
 
+#Sukuriau 'for' cikla, kad atlikti HTTP užklausas autobilis.lt svetaines 161 puslapyje ir gauti HTML turinį iš kiekvieno puslapio
 for page_num in range(1, 162):
     source = requests.get(
         f'https://www.autobilis.lt/skelbimai/naudoti-automobiliai?order_by=created_at-desc&category_id=1&page={page_num}').text
     soup = BeautifulSoup(source, 'html.parser')
     blokai = soup.find('div', class_="search-rezult-container").find_all('div', class_="search-rezult-content")
 
+    #kodas leidžia pereiti per kiekvieną blokas objektą blokai sąraše ir išgauti informaciją apie automobilius (markę, metus, kainą ir tt.) 
+    #iš HTML struktūros. Ši informacija spausdinama ekrane ir taip pat pridedama prie data sąrašo.
     for blokas in blokai:
         try:
             marke = blokas.find('div', class_="title").get_text(strip=True).split(',')[0]
@@ -30,7 +34,8 @@ for page_num in range(1, 162):
         except Exception as e:
             pass
 
-
+#kodas leidžia padalinti duomenis į mokymo ir testavimo rinkinius, pašalinti 'Kaina' stulpelį iš testavimo rinkinio ir išsaugoti mokymo ir 
+#testavimo rinkinius kaip atskirus CSV failus.
 train_data, test_data = train_test_split(pd.DataFrame.from_dict(data), test_size=0.3)
 
 test_data.drop('Kaina', axis=1, inplace=True)
